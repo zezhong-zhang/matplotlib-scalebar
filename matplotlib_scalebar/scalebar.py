@@ -35,6 +35,8 @@ __all__ = [
     "IMPERIAL_LENGTH",
     "ASTRO_LENGTH",
     "PIXEL_LENGTH",
+    "ATOMIC_LENGTH",
+    "ATOMIC_LENGTH_RECIPROCAL",
 ]
 
 # Standard library modules.
@@ -71,6 +73,8 @@ from matplotlib_scalebar.dimension import (
     AstronomicalLengthDimension,
     PixelLengthDimension,
     AngleDimension,
+    AtomicLengthDimension,
+    AtomicLengthReciprocalDimension,
 )
 
 # Globals and constants variables.
@@ -132,6 +136,8 @@ IMPERIAL_LENGTH = "imperial-length"
 ASTRO_LENGTH = "astro-length"
 PIXEL_LENGTH = "pixel-length"
 ANGLE = "angle"
+ATOMIC_LENGTH = "atomic-length"
+ATOMIC_LENGTH_RECIPROCAL = "atomic-length-reciprocal"
 
 _DIMENSION_LOOKUP = {
     SI_LENGTH: SILengthDimension,
@@ -140,6 +146,8 @@ _DIMENSION_LOOKUP = {
     ASTRO_LENGTH: AstronomicalLengthDimension,
     PIXEL_LENGTH: PixelLengthDimension,
     ANGLE: AngleDimension,
+    ATOMIC_LENGTH: AtomicLengthDimension,
+    ATOMIC_LENGTH_RECIPROCAL: AtomicLengthReciprocalDimension,
 }
 
 
@@ -229,6 +237,8 @@ class ScaleBar(Artist):
                 * ``:const:`astro-length```: scale bar showing pc, kpc ly, AU, etc.
                 * ``:const:`pixel-length```: scale bar showing px, kpx, Mpx, etc.
                 * ``:const:`angle```: scale bar showing \u00b0, \u2032 or \u2032\u2032.
+                * ``:const:`atomic-length```: scale bar showing \AA, nm, \u00B5m, etc.
+                * ``:const:`atomic-length-reciprocal```: scale bar showing 1/\AA, 1/nm, 1/\u00B5m, etc.
                 * a :class:`matplotlib_scalebar.dimension._Dimension` object
         :type dimension: :class:`str` or
             :class:`matplotlib_scalebar.dimension._Dimension`
@@ -601,8 +611,33 @@ class ScaleBar(Artist):
         return self._units
 
     def set_units(self, units):
+        """
+        Set the units of the scale bar.
+        """
+        old_units = self._units if hasattr(self, '_units') else None
+        old_dx = self._dx if hasattr(self, '_dx') else None
+
+        # Auto-detect Angstrom units and switch to atomic dimension
+        if units in ["Å", "A", "angstrom"]:
+            self._dimension = _DIMENSION_LOOKUP[ATOMIC_LENGTH]()
+        elif units in ["1/Å", "1/A", "1/angstrom"]:
+            self._dimension = _DIMENSION_LOOKUP[ATOMIC_LENGTH_RECIPROCAL]()
+        elif hasattr(self, '_dimension') and isinstance(self._dimension, (AtomicLengthDimension, AtomicLengthReciprocalDimension)) and units not in ["Å", "A", "angstrom", "1/Å", "1/A", "1/angstrom"]:
+            # Switch back to SI if changing from Angstrom to non-Angstrom units
+            if '/' in units:
+                self._dimension = _DIMENSION_LOOKUP[SI_LENGTH_RECIPROCAL]()
+            else:
+                self._dimension = _DIMENSION_LOOKUP[SI_LENGTH]()
+
         if not self.dimension.is_valid_units(units):
             raise ValueError(f"Invalid unit ({units}) with dimension")
+
+        # Convert dx to the new units if we're changing units
+        if old_units is not None and old_dx is not None:
+            # All conversions are now handled by the dimension's convert method
+            # since factors are relative to meters
+            self._dx = self.dimension.convert(old_dx, old_units, units)
+
         self._units = units
 
     units = property(get_units, set_units)

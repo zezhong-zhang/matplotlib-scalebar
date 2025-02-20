@@ -25,7 +25,6 @@ _PREFIXES_FACTORS = {
     "\u00b5": 1e-6,
     "u": 1e-6,
     "n": 1e-9,
-    "A": 1e-10,
     "p": 1e-12,
     "f": 1e-15,
     "a": 1e-18,
@@ -82,7 +81,6 @@ class _Dimension(object):
         if index:
             newunits, factor = units_factor[index - 1]
             return base_value / factor, newunits
-
         else:
             return value, units
 
@@ -112,11 +110,7 @@ class SILengthDimension(_Dimension):
             latexrepr = None
             if prefix == "\u00b5" or prefix == "u":
                 latexrepr = _LATEX_MU + "m"
-            if prefix == "Å" or prefix == "A" or prefix == "angstrom":
-                latexrepr = "Å"  # Directly add "Å" without appending "m"
-                self.add_units(prefix, factor, latexrepr)
-            else:
-                self.add_units(prefix + "m", factor, latexrepr)
+            self.add_units(prefix + "m", factor, latexrepr)
 
 
 class SILengthReciprocalDimension(_Dimension):
@@ -126,11 +120,7 @@ class SILengthReciprocalDimension(_Dimension):
             latexrepr = "{0}m$^{{-1}}$".format(prefix)
             if prefix == "\u00b5" or prefix == "u":
                 latexrepr = _LATEX_MU + "m$^{-1}$"
-            if prefix == "Å" or prefix == "A" or prefix == "angstrom":
-                latexrepr = "Å$^{-1}$"
-                self.add_units("1/A", 1 / factor, latexrepr)
-            else:
-                self.add_units("1/{0}m".format(prefix), 1 / factor, latexrepr)
+            self.add_units("1/{0}m".format(prefix), 1 / factor, latexrepr)
 
 
 class ImperialLengthDimension(_Dimension):
@@ -175,3 +165,26 @@ class AngleDimension(_Dimension):
     def create_label(self, value, latexrepr):
         # Overriden to remove space between value and units.
         return "{}{}".format(value, latexrepr)
+
+
+class AtomicLengthDimension(SILengthDimension):
+    """Dimension for atomic-scale lengths using Angstrom as the base unit."""
+    def __init__(self):
+        super().__init__()
+        latexrepr = "$\\mathrm{\\AA}$"
+        factor = 1e-10
+        
+        self.add_units("angstrom", factor, latexrepr)  # Full name
+        self.add_units("A", factor, latexrepr)  
+        self.add_units("Å", factor, latexrepr)
+
+class AtomicLengthReciprocalDimension(SILengthReciprocalDimension):
+    """Dimension for reciprocal atomic-scale lengths using inverse Angstrom as the base unit."""
+    def __init__(self):
+        super().__init__()
+        latexrepr = "$\\mathrm{\\AA}^{-1}$"
+        factor = 1e10
+        
+        self.add_units("1/angstrom", factor, latexrepr)  # Full name
+        self.add_units("1/A", factor, latexrepr)
+        self.add_units("1/Å", factor, latexrepr)

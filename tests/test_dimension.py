@@ -11,6 +11,8 @@ from matplotlib_scalebar.dimension import (
     SILengthReciprocalDimension,
     ImperialLengthDimension,
     PixelLengthDimension,
+    AtomicLengthDimension,
+    AtomicLengthReciprocalDimension,
     _LATEX_MU,
 )
 
@@ -37,6 +39,11 @@ from matplotlib_scalebar.dimension import (
         (PixelLengthDimension(), 200, "px", 200.0, "px"),
         (PixelLengthDimension(), 0.02, "px", 0.02, "px"),
         (PixelLengthDimension(), 0.001, "px", 0.001, "px"),
+        # Test Angstrom preferred units
+        (AtomicLengthDimension(), 0.1, "nm", 1, "Å"),
+        (AtomicLengthDimension(), 10, "Å", 1, "nm"),
+        (AtomicLengthReciprocalDimension(), 100, "1/nm", 10, "1/Å"),
+        (AtomicLengthReciprocalDimension(), 0.1, "1/Å", 1, "1/nm"),
     ],
 )
 def test_calculate_preferred(dim, value, units, expected_value, expected_units):
@@ -65,6 +72,13 @@ def test_to_latex(dim, units, expected):
         (SILengthDimension(), 2, "um", "cm", 2e-4),
         (PixelLengthDimension(), 2, "kpx", "px", 2000),
         (PixelLengthDimension(), 2, "px", "kpx", 2e-3),
+        # Test Angstrom conversions
+        (AtomicLengthDimension(), 1, "Å", "nm", 0.1),
+        (AtomicLengthDimension(), 1, "nm", "Å", 10),
+        (AtomicLengthDimension(), 1, "A", "angstrom", 1),
+        (AtomicLengthReciprocalDimension(), 1, "1/Å", "1/nm", 10),
+        (AtomicLengthReciprocalDimension(), 1, "1/nm", "1/Å", 0.1),
+        (AtomicLengthReciprocalDimension(), 1, "1/A", "1/angstrom", 1),
     ],
 )
 def test_convert(dim, value, units, newunits, expected_value):
